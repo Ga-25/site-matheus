@@ -374,7 +374,32 @@ function initFinalPixelEvents(){
       });
     }
 
+function sendCAPIEvent(payload) {
+    const url = "https://capi-api-matheus.onrender.com/event";
 
+    try {
+      if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        const ok = navigator.sendBeacon(url, blob);
+        console.log('📡 CAPI via sendBeacon =>', ok);
+        return Promise.resolve({ beacon: ok });
+      }
+    } catch(e){
+      console.warn('sendBeacon falhou', e);
+    }
+
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    })
+    .then(res => res.ok ? res.json().catch(()=>({ ok: true })) : { ok: false, status: res.status })
+    .catch(err => {
+      console.error('❌ CAPI fetch error', err);
+      return { ok: false, error: String(err) };
+    });
+  }
 
 function firePurchaseEvent(){
   // evita disparo múltiplo (por reload)
@@ -403,7 +428,28 @@ function firePurchaseEvent(){
   // salva flag para evitar reenvio se a pessoa atualizar a página
   try { localStorage.setItem('purchase_fired', eventId); } catch(e){}
 
+const payload = {
+  event_name: "Purchase",
+  event_id: eventId,
+  event_source_url: window.location.href,
+  user: {
+    name: localStorage.getItem("user_name") || "",
+    email: localStorage.getItem("user_email") || "",
+    phone: localStorage.getItem("user_phone") || "",
+    fbp: localStorage.getItem("_fbp") || "",
+    fbc: localStorage.getItem("_fbc") || ""
+  },
+  custom_data: {
+    content_ids: ["linxtv-premium"],
+    content_name: "linxtvPremium",
+    content_type: "subscription",
+    value: 25.00,
+    currency: "BRL",
+    order_id: localStorage.getItem("transacao") || "N/A"
+  }
+};
 
+sendCAPIEvent(payload).then(resp => console.log('📡 CAPI resp', resp));
 }
 
 

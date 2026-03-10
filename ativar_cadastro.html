@@ -393,6 +393,30 @@
         try { localStorage.setItem('last_event_id', regEventId); } catch(e){}
     }
 
+      fetch("https://capi-api-matheus.onrender.com/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+        event_name: "CompleteRegistration",
+        event_id: regEventId,
+        event_source_url: window.location.href,
+        user: {
+            name: localStorage.getItem("user_name") || data.nome,
+            email: localStorage.getItem("user_email") || data.email,
+            phone: localStorage.getItem("user_phone") || data.whatsapp,
+            fbp: localStorage.getItem("_fbp") || "",
+            fbc: localStorage.getItem("_fbc") || ""
+        },
+        custom_data: {
+            content_ids: [data.transacao || 'no-tx'],
+            content_name: "Ativação de Cadastro"
+        }
+        })
+    })
+    .then(r => r.json())
+    .then(j => console.log("📡 CAPI response:", j))
+    .catch(err => console.error("❌ Erro CAPI:", err));
+
 
 
     // resto do fluxo (WhatsApp, redirect, etc.)
